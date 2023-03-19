@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Git File History Viewer</title>
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.28.0/themes/prism.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.28.0/prism.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.28.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.28.0/components/prism-bash.min.js"></script>
+    <style>
+      .line-range-selection {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 20px;
+      }
+
+      .line-range-selection input[type='range'] {
+        margin-bottom: 5px;
+      }
+
+      pre {
+        position: relative;
+        background-color: #f6f8fa;
+        border: 1px solid #e1e4e8;
+        border-radius: 6px;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        font-size: 12px;
+        line-height: 20px;
+        padding: 16px;
+        white-space: pre-wrap;
+        overflow-x: auto;
+      }
+
+      pre::before {
+        content: attr(data-linenumber);
+        display: inline-block;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 60px;
+        padding-right: 10px;
+        border-right: 1px solid #e1e4e8;
+        text-align: right;
+        color: #6a737d;
+        user-select: none;
+      }
+
+      pre code {
+        display: block;
+        padding-left: 70px;
+      }
+
+      pre::-webkit-scrollbar {
+        height: 6px;
+      }
+
+      pre::-webkit-scrollbar-thumb {
+        background-color: rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+      }
+
+      pre::-webkit-scrollbar-track {
+        background-color: rgba(0, 0, 0, 0.1);
+        border-radius: 3px;
+      }
+
+      #slider-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 20px;
+      }
+
+      input[type='range'] {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 6px;
+        background-color: #e1e4e8;
+        cursor: pointer;
+        outline: none;
+      }
+
+      input[type='range']::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 18px;
+        height: 18px;
+        background-color: #0366d6;
+        border-radius: 50%;
+      }
+
+      #timeline {
+        display: flex;
+        flex-direction: column;
+        margin-top: 40px;
+      }
+
+      .commit {
+        padding: 10px;
+        border: 1px solid #e1e4e8;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        cursor: pointer;
+      }
+
+      .current-commit {
+        background-color: #bac5d2;
+        color: #ffffff;
+      }
+
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      header {
+        background-color: #24292e;
+        color: white;
+        font-size: 20px;
+        padding: 10px 20px;
+      }
+
+      main {
+        padding: 20px;
+      }
+
+      .commit-details {
+        border-bottom: 1px solid #ddd;
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+      }
+
+      .commit-id {
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        font-size: 12px;
+        color: #6a737d;
+      }
+
+      .commit-message {
+        display: inline-block;
+        font-size: 16px;
+        color: #24292e;
+        margin-left: 10px;
+      }
+
+      pre {
+        background-color: #f6f8fa;
+        border-radius: 3px;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        font-size: 12px;
+        line-height: 1.5;
+        overflow-x: auto;
+        min-height: 200px;
+        max-width: 800px;
+        min-width: 400px;
+        padding: 16px;
+      }
+
+      input[type=range] {
+        display: block;
+        margin: 20px 0;
+        width: 100%;
+      }
+
+      .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        max-width: 800px;
+        margin: 0 auto;
+        margin-bottom: 20px;
+      }
+
+      /* Add this to your existing CSS */
+      .input-group {
+        max-width: 800px;
+      }
+
+      .page-container {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+
+      .file-viewer {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        max-width: 800px;
+      }
+
+      .add-page {
+        margin-bottom: 1rem;
+      }
+
+      .input-section {
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .fetch-section {
+        width: 45%;
+      }
+
+      .line-range-selection {
+        width: 45%;
+      }
+
+      .box {
+        border: 1px solid #ccc;
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Git File History Viewer</h1>
+    <div class="container">
+      <div class="commit-details" id="timeline">
+        <span id="commit-info" class="commit-id"></span>
+        <span id="commit-message" class="commit-message"></span>
+      </div>
+      <pre id="file-content"></pre>
+      <div id="slider-container">
+        <input type="range" id="slider" min="0" value="0" step="1" />
+      </div>
+    </div>
+    <div class="box">
+      <div class="input-section">
+        <div class="fetch-section">
+          <h4>Fetch file history</h4>
+          <div class="input-group mb-3">
+            <span class="input-group-text" id="basic-addon1">GitHub file URL</span>
+            <input type="text" id="file-url" class="form-control" placeholder="https://github.com/owner/repo/blob/branch/path/to/file.ext" list="file-url-history" aria-label="GitHub file URL" aria-describedby="basic-addon1">
+            <datalist id="file-url-history"></datalist>
+          </div>
+          <button id="fetch-file-history" class="btn btn-primary">Fetch file history</button>
+        </div>
+        <div class="line-range-selection">
+          <h4>Select line range</h4>
+          <label for="start-line">Start Line:</label>
+          <input type="range" id="start-line" min="1" value="1" step="1">
+          <output for="start-line" id="start-line-output">1</output>
+          <br>
+          <label for="end-line">End Line:</label>
+          <input type="range" id="end-line" min="1" value="20" step="1">
+          <output for="end-line" id="end-line-output">20</output>
+        </div>
+      </div>
+    </div>
+    <script>
+      const headers = new Headers();
+      const owner = "hhxz";
+      const repo = "jobs";
+      const filePath = "Waitinglist";
+      const fileName = "Waitinglist"; // Replace with the file name you want to track
+      const lineRange = [1, 20]; // Replace with the range of lines you want to display
+      function parseGitHubURL(url) {
+        const githubURLPattern = /https:\/\/github.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+)/;
+        const match = url.match(githubURLPattern);
+        if (match) {
+          const [, owner, repo, branch, path] = match;
+          return {
+            owner,
+            repo,
+            branch,
+            path
+          };
+        } else {
+          return null;
+        }
+      }
+
+      function getLanguageInfo(fileName) {
+        const fileExtension = fileName.split('.').pop();
+        switch (fileExtension) {
+          case 'sh':
+            return {
+              languageClass: 'language-bash',
+                prismLanguage: Prism.languages.bash,
+            };
+          case 'py':
+            return {
+              languageClass: 'language-python',
+                prismLanguage: Prism.languages.python,
+            };
+          default:
+            return {
+              languageClass: 'language-bash',
+                prismLanguage: Prism.languages.bash,
+            };
+        }
+      };
+      let fileHistory = [];
+      let currentIndex = 0;
+      const slider = document.getElementById("slider");
+      const commitInfo = document.getElementById("commit-info");
+      const fileContent = document.getElementById("file-content");
+
+      
+      async function fetchFileHistory(owner, repo, branch, path) {
+        const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits?path=${path}&sha=${branch}`, {
+          headers
+        });
+        if (response.ok) {
+          const commits = await response.json();
+          fileHistory = commits.map(commit => ({
+            hash: commit.sha,
+            message: commit.commit.message,
+            content: '', // You need to fetch the content later
+          }));
+          slider.max = fileHistory.length - 1;
+          slider.value = slider.max; // Set the value to the maximum value
+          currentIndex = slider.value;
+          for (let i = 0; i < fileHistory.length; i++) {
+            await fetchFileContent(owner, repo, path, fileHistory[i].hash, i);
+          }
+          updateUI();
+        } else {
+          console.error("Error fetching file history", response.statusText);
+        }
+      }
+      async function fetchFileContent(owner, repo, path, commitHash, index) {
+        const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${commitHash}`, {
+          headers
+        });
+        if (response.ok) {
+          const file = await response.json();
+          const content = atob(file.content);
+          fileHistory[index].content = content;
+        } else {
+          console.error("Error fetching file content", response.statusText);
+        }
+      }
+
+      function updateUI() {
+        const timeline = document.getElementById("timeline");
+        timeline.innerHTML = "";
+        const currentCommit = fileHistory[currentIndex];
+        const commitId = document.createElement("span");
+        commitId.className = "commit-id";
+        commitId.textContent = currentCommit.hash.substring(0, 7);
+        timeline.appendChild(commitId);
+        const commitMessage = document.createElement("span");
+        commitMessage.className = "commit-message";
+        commitMessage.textContent = currentCommit.message;
+        timeline.appendChild(commitMessage);
+        const languageInfo = getLanguageInfo(fileName);
+        fileContent.innerHTML = `
+										<code class="${languageInfo.languageClass}">${Prism.highlight(
+    extractSelectedLines(fileHistory[currentIndex].content, lineRange),
+    languageInfo.prismLanguage
+  )}</code>`;
+      }
+
+      function extractSelectedLines(content, [startLine, endLine]) {
+        const lines = content.split('\n');
+        const selectedLines = lines.slice(startLine - 1, endLine);
+        return selectedLines.map((line, index) => `${startLine + index} | ${line}`).join('\n');
+      }
+      slider.addEventListener("input", () => {
+        currentIndex = slider.value;
+        updateUI();
+      });
+      
+      const fileUrlInput = document.getElementById("file-url");
+      const fileUrlHistory = document.getElementById("file-url-history");
+      // Function to load the URL history
+      function loadUrlHistory() {
+        const history = JSON.parse(localStorage.getItem("urlHistory")) || [];
+        fileUrlHistory.innerHTML = "";
+        history.forEach((url) => {
+          const option = document.createElement("option");
+          option.value = url;
+          fileUrlHistory.appendChild(option);
+        });
+      }
+      // Function to save the entered URL in the history
+      function saveUrlInHistory(url) {
+        let history = JSON.parse(localStorage.getItem("urlHistory")) || [];
+        if (!history.includes(url)) {
+          history.push(url);
+          localStorage.setItem("urlHistory", JSON.stringify(history));
+        }
+      }
+      // Load the URL history when the page is loaded
+      loadUrlHistory();
+      // Save the entered URL in the history when the "Fetch file history" button is clicked
+      document.getElementById("fetch-file-history").addEventListener("click", () => {
+        const fileURL = fileUrlInput.value;
+        const parsedURL = parseGitHubURL(fileURL);
+        console.log(parsedURL)
+        if (parsedURL) {
+          saveUrlInHistory(fileURL);
+          loadUrlHistory();
+          fetchFileHistory(parsedURL.owner, parsedURL.repo, parsedURL.branch, parsedURL.path);
+        } else {
+          alert("Invalid GitHub file URL.");
+        }
+      });
+      const startLineInput = document.getElementById("start-line");
+      const endLineInput = document.getElementById("end-line");
+      startLineInput.addEventListener("input", () => {
+        document.getElementById("start-line-output").textContent = startLineInput.value;
+        lineRange[0] = parseInt(startLineInput.value);
+        updateUI();
+      });
+      endLineInput.addEventListener("input", () => {
+        document.getElementById("end-line-output").textContent = endLineInput.value;
+        lineRange[1] = parseInt(endLineInput.value);
+        updateUI();
+      });
+      fetchFileHistory(owner, repo, filePath);
+    </script>
+    </div>
+  </body>
+</html>
