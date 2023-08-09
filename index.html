@@ -269,20 +269,22 @@
       const fileName = "Waitinglist"; // Replace with the file name you want to track
       const lineRange = [1, 20]; // Replace with the range of lines you want to display
       function parseGitHubURL(url) {
-        const githubURLPattern = /https:\/\/github.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+)/;
+        const githubURLPattern = /https:\/\/github.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+)(#L(\d+)-L(\d+))?/;
         const match = url.match(githubURLPattern);
         if (match) {
-          const [, owner, repo, branch, path] = match;
-          return {
-            owner,
-            repo,
-            branch,
-            path
-          };
+            const [, owner, repo, branch, path, , startLine, endLine] = match;
+            return {
+                owner,
+                repo,
+                branch,
+                path,
+                startLine: startLine ? parseInt(startLine) : null,
+                endLine: endLine ? parseInt(endLine) : null
+            };
         } else {
-          return null;
+            return null;
         }
-      }
+    }
 
       function getLanguageInfo(fileName) {
         const fileExtension = fileName.split('.').pop();
@@ -414,6 +416,12 @@
         const parsedURL = parseGitHubURL(fileURL);
         console.log(parsedURL)
         if (parsedURL) {
+          if (parsedURL.startLine && parsedURL.endLine) {
+            startLineInput.value = parsedURL.startLine;
+            endLineInput.value = parsedURL.endLine;
+            lineRange[0] = parsedURL.startLine;
+            lineRange[1] = parsedURL.endLine;
+          }
           saveUrlInHistory(fileURL);
           loadUrlHistory();
           fetchFileHistory(parsedURL.owner, parsedURL.repo, parsedURL.branch, parsedURL.path);
