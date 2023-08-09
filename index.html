@@ -269,30 +269,20 @@
       const fileName = "Waitinglist"; // Replace with the file name you want to track
       const lineRange = [1, 20]; // Replace with the range of lines you want to display
       function parseGitHubURL(url) {
-        const githubFileURLPattern = /https:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+)/;
-        const githubBranchURLPattern = /https:\/\/github\.com\/([^/]+)\/([^/]+)\/tree\/([^/]+)/;
-        let match = url.match(githubFileURLPattern);
+        const githubURLPattern = /https:\/\/github.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+)/;
+        const match = url.match(githubURLPattern);
         if (match) {
-            const [, owner, repo, branch, path] = match;
-            return {
-                owner,
-                repo,
-                branch,
-                path
-            };
+          const [, owner, repo, branch, path] = match;
+          return {
+            owner,
+            repo,
+            branch,
+            path
+          };
         } else {
-            match = url.match(githubBranchURLPattern);
-            if (match) {
-                const [, owner, repo, branch] = match;
-                return {
-                    owner,
-                    repo,
-                    branch
-                };
-            }
+          return null;
         }
-        return null;
-    }
+      }
 
       function getLanguageInfo(fileName) {
         const fileExtension = fileName.split('.').pop();
