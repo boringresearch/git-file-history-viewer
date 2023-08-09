@@ -241,6 +241,11 @@
             <input type="text" id="file-url" class="form-control" placeholder="https://github.com/owner/repo/blob/branch/path/to/file.ext" list="file-url-history" aria-label="GitHub file URL" aria-describedby="basic-addon1">
             <datalist id="file-url-history"></datalist>
           </div>
+          <div class="input-group mb-3">
+            <span class="input-group-text" id="basic-addon2">GitHub Token</span>
+            <input type="password" id="token" class="form-control" placeholder="Enter your GitHub Token" aria-label="GitHub Token" aria-describedby="basic-addon2">
+          </div>
+          
           <button id="fetch-file-history" class="btn btn-primary">Fetch file history</button>
         </div>
         <div class="line-range-selection">
@@ -256,6 +261,7 @@
       </div>
     </div>
     <script>
+      let token = "";
       const headers = new Headers();
       const owner = "hhxz";
       const repo = "jobs";
@@ -303,9 +309,13 @@
       const slider = document.getElementById("slider");
       const commitInfo = document.getElementById("commit-info");
       const fileContent = document.getElementById("file-content");
-
       
       async function fetchFileHistory(owner, repo, branch, path) {
+        token = document.getElementById("token").value;
+        if (token) {
+          headers.set('Authorization', 'token ' + token);
+        }
+
         const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits?path=${path}&sha=${branch}`, {
           headers
         });
@@ -327,7 +337,13 @@
           console.error("Error fetching file history", response.statusText);
         }
       }
+
       async function fetchFileContent(owner, repo, path, commitHash, index) {
+        token = document.getElementById("token").value;
+        if (token) {
+          headers.set('Authorization', 'token ' + token);
+        }
+
         const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${commitHash}`, {
           headers
         });
